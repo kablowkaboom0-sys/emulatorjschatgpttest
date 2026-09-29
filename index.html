@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standalone GBA Emulator</title>
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #111;
+      color: #eee;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .wrap {
+      width: min(960px, 100%);
+      text-align: center;
+    }
+    h1 { margin: 0 0 8px; }
+    p { color: #aaa; }
+    #game-canvas {
+      width: 640px;
+      height: 480px;
+      max-width: 100%;
+      margin: 20px auto;
+      background: #000;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button, label {
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    button:hover, label:hover { background: #444; }
+    input[type="file"] { display: none; }
+    #status { min-height: 24px; color: #aaa; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Standalone GBA Emulator</h1>
+    <p id="status">Choose a GBA ROM to start.</p>
+
+    <div id="game-canvas"></div>
+
+    <div class="controls">
+      <label for="rom-input">Choose GBA ROM</label>
+      <input id="rom-input" type="file" accept=".gba,application/octet-stream">
+      <button id="load-default" type="button">Load mygame.gba</button>
+    </div>
+  </main>
+
+  <script>
+    const status = document.getElementById("status");
+    const input = document.getElementById("rom-input");
+    const defaultButton = document.getElementById("load-default");
+
+    window.EJS_player = "#game-canvas";
+    window.EJS_core = "gba";
+    window.EJS_pathtodata = "data/";
+    window.EJS_startOnLoaded = true;
+    window.EJS_defaultOptions = {
+      "save-state-location": "browser"
+    };
+
+    let emulatorStarted = false;
+
+    function startEmulator(gameUrl, gameName) {
+      if (emulatorStarted) {
+        status.textContent = "The emulator is already running.";
+        return;
+      }
+
+      emulatorStarted = true;
+      window.EJS_gameUrl = gameUrl;
+      window.EJS_gameName = gameName || "GBA Game";
+      status.textContent = "Starting EmulatorJS…";
+
+      const loader = document.createElement("script");
+      loader.src = "data/loader.js";
+      loader.onload = () => {
+        status.textContent = "Emulator loaded.";
+      };
+      loader.onerror = () => {
+        emulatorStarted = false;
+        status.textContent = "Could not load local EmulatorJS assets.";
+      };
+      document.body.appendChild(loader);
+    }
+
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      startEmulator(file, file.name);
+    });
+
+    defaultButton.addEventListener("click", () => {
+      startEmulator("mygame.gba", "mygame.gba");
+    });
+
+    // Optional automatic loading:
+    // index.html?rom=mygame.gba
+    const rom = new URLSearchParams(location.search).get("rom");
+    if (rom) {
+      startEmulator(rom, rom.split("/").pop());
+    }
+  </script>
+</body>
+</html>
